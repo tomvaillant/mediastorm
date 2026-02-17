@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI for MediaStorm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1696D5;
+    --blue-light: #66B8E3;
+    --bg: #111111;
+    --bg-card: #1a1a1a;
+    --text: #f0f0f0;
+    --text-dim: #888888;
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'Open Sans', -apple-system, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8vh 10vw 14vh;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.6s ease, visibility 0s 0.6s;
+  }
+
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.6s ease, visibility 0s;
+  }
+
+  .slide.active .reveal {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .reveal:nth-child(1) { transition-delay: 0.15s; }
+  .reveal:nth-child(2) { transition-delay: 0.3s; }
+  .reveal:nth-child(3) { transition-delay: 0.45s; }
+  .reveal:nth-child(4) { transition-delay: 0.6s; }
+  .reveal:nth-child(5) { transition-delay: 0.75s; }
+  .reveal:nth-child(6) { transition-delay: 0.9s; }
+  .reveal:nth-child(7) { transition-delay: 1.05s; }
+  .reveal:nth-child(8) { transition-delay: 1.2s; }
+  .reveal:nth-child(9) { transition-delay: 1.35s; }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(2.8rem, 5.5vw, 5rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.4em;
+  }
+
+  h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 0.5em;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: clamp(0.8rem, 1.2vw, 1rem);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--blue);
+    margin-bottom: 1.5em;
+  }
+
+  p, li {
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: clamp(1rem, 1.5vw, 1.3rem);
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-width: 680px;
+  }
+
+  .accent { color: var(--blue); }
+  .bright { color: var(--text); }
+
+  /* Blue left border */
+  .blade {
+    border-left: 3px solid var(--blue);
+    padding-left: 1.5em;
+  }
+
+  /* Stats */
+  .stats {
+    display: flex;
+    gap: 4vw;
+    margin-top: 2em;
+  }
+
+  .stat-num {
+    font-family: var(--serif);
+    font-size: clamp(2.5rem, 4vw, 3.6rem);
+    color: var(--blue);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    margin-top: 0.3em;
+    letter-spacing: 0.04em;
+  }
+
+  /* Possibilities two-col */
+  .poss-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4vw;
+    margin-top: 1.5em;
+  }
+
+  .poss-col h4 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--blue);
+    margin-bottom: 1.2em;
+    padding-bottom: 0.6em;
+    border-bottom: 1px solid #252525;
+  }
+
+  .poss-list {
+    list-style: none;
+    max-width: none;
+  }
+
+  .poss-list li {
+    padding: 0.7em 0;
+    border-bottom: 1px solid #1a1a1a;
+    font-size: clamp(0.9rem, 1.2vw, 1.05rem);
+    max-width: none;
+  }
+
+  .poss-list li:last-child {
+    border-bottom: none;
+  }
+
+  .poss-query {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--blue-light);
+    font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+    display: block;
+    margin-bottom: 0.25em;
+  }
+
+  /* What I Need two blocks */
+  .need-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4vw;
+    margin-top: 1em;
+  }
+
+  .need-block h4 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--blue);
+    margin-bottom: 1em;
+  }
+
+  /* Checklist */
+  .checklist {
+    list-style: none;
+    margin-top: 0.5em;
+  }
+
+  .checklist li {
+    padding: 0.55em 0;
+    padding-left: 1.6em;
+    position: relative;
+    font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+    color: var(--text-dim);
+  }
+
+  .checklist li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--blue);
+    border-radius: 2px;
+  }
+
+  .checklist li.critical {
+    color: var(--text);
+  }
+
+  .checklist li.critical::before {
+    background: var(--blue);
+  }
+
+  /* Pipeline */
+  .pipeline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5vw;
+    margin-top: 1.5em;
+  }
+
+  .pipe-step {
+    position: relative;
+    padding: 1.6em 1.8em;
+    background: var(--bg-card);
+    border: 1px solid #252525;
+    border-radius: 6px;
+  }
+
+  .pipe-step .step-num {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--blue);
+    margin-bottom: 0.8em;
+  }
+
+  .pipe-step h4 {
+    font-family: var(--serif);
+    font-size: 1.2rem;
+    margin-bottom: 0.5em;
+    color: var(--text);
+  }
+
+  .pipe-step p {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  .pipe-step .pipe-tech {
+    margin-top: 0.8em;
+    font-size: 0.75rem;
+    color: var(--blue);
+    letter-spacing: 0.03em;
+    font-weight: 600;
+  }
+
+  /* Two-row pipeline */
+  .pipeline-2row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5vw;
+    margin-top: 1em;
+  }
+
+  /* Timeline */
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2vw;
+    margin-top: 1.5em;
+  }
+
+  .timeline-day {
+    position: relative;
+    padding: 2em;
+    background: var(--bg-card);
+    border: 1px solid #252525;
+    border-radius: 6px;
+    border-top: 3px solid var(--blue);
+  }
+
+  .timeline-day .day-num {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    color: var(--blue);
+    margin-bottom: 0.6em;
+  }
+
+  .timeline-day h4 {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    margin-bottom: 0.7em;
+    color: var(--text);
+  }
+
+  .timeline-day p {
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  /* Bonus badge */
+  .bonus {
+    display: inline-block;
+    margin-top: 1.8em;
+    padding: 0.8em 1.5em;
+    background: linear-gradient(135deg, #1696D520, #1696D508);
+    border: 1px solid #1696D540;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    color: var(--blue-light);
+  }
+
+  .bonus strong {
+    color: var(--blue);
+  }
+
+  /* Diagram */
+  .diagram {
+    display: flex;
+    align-items: center;
+    gap: 1.2em;
+    margin-top: 2em;
+    flex-wrap: wrap;
+  }
+
+  .diagram-node {
+    padding: 0.8em 1.4em;
+    background: var(--bg-card);
+    border: 1px solid #303030;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .diagram-node.highlight {
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  .diagram-arrow {
+    color: #444;
+    font-size: 1.2rem;
+  }
+
+  /* Enrichment tags */
+  .enrich-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    margin-top: 1.5em;
+  }
+
+  .enrich-tag {
+    padding: 0.4em 1em;
+    border: 1px solid #303030;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+  }
+
+  .enrich-tag.hl {
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  /* Logo */
+  .logo {
+    height: 30px;
+    opacity: 0.7;
+    margin-bottom: 3em;
+  }
+
+  /* Nav */
+  .nav {
+    position: fixed;
+    bottom: 3vh;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.6em;
+    z-index: 100;
+  }
+
+  .nav-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #333;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .nav-dot.active {
+    background: var(--blue);
+    width: 24px;
+    border-radius: 3px;
+  }
+
+  .nav-hint {
+    position: fixed;
+    bottom: 3vh;
+    right: 4vw;
+    font-size: 0.75rem;
+    color: #444;
+    letter-spacing: 0.06em;
+  }
+
+  /* Title slide */
+  .slide-title {
+    justify-content: flex-end;
+    padding-bottom: 22vh;
+  }
+
+  .slide-title h1 {
+    font-size: clamp(3rem, 6vw, 5.5rem);
+  }
+
+  .slide-title .subtitle {
+    font-family: var(--sans);
+    font-weight: 300;
+    font-size: clamp(1rem, 1.6vw, 1.35rem);
+    color: var(--text-dim);
+    margin-top: 0.5em;
+    letter-spacing: 0.02em;
+  }
+
+  /* End slide */
+  .slide-end {
+    text-align: center;
+    align-items: center;
+  }
+
+  .slide-end h2 {
+    font-size: clamp(2.5rem, 5vw, 4.2rem);
+  }
+
+  /* Grain */
+  .grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  @media (max-width: 768px) {
+    .slide { padding: 6vh 7vw; }
+    .pipeline, .pipeline-2row, .timeline { grid-template-columns: 1fr; }
+    .poss-cols, .need-cols { grid-template-columns: 1fr; gap: 2em; }
+    .stats { flex-direction: column; gap: 1.5em; }
+    .diagram { flex-direction: column; align-items: flex-start; }
+    .diagram-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Title + Asset -->
+  <div class="slide slide-title active" data-slide="0">
+    <div class="reveal">
+      <img src="https://www.mediastorm.com/media/fa05fa2fdd0e43dc994b4e4a23e07563.png" alt="MediaStorm" class="logo">
+    </div>
+    <h1 class="reveal">AI for<br><span class="accent">Stories that Matter</span></h1>
+    <p class="subtitle reveal">A collaboration &mdash; February 2026</p>
+    <div class="stats reveal">
+      <div>
+        <div class="stat-num">350+</div>
+        <div class="stat-label">stories produced</div>
+      </div>
+      <div>
+        <div class="stat-num">20</div>
+        <div class="stat-label">years of work</div>
+      </div>
+      <div>
+        <div class="stat-num">4</div>
+        <div class="stat-label">Emmy Awards</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: The Foundation -->
+  <div class="slide" data-slide="1">
+    <h3 class="reveal">The Foundation</h3>
+    <h2 class="reveal">Knowledge Graph +<br>Vector Store</h2>
+    <p class="reveal">
+      Turn 20 years of transcripts and metadata into a
+      <span class="bright">searchable, interconnected, intelligent library</span>
+      that powers everything we build next.
+    </p>
+    <div class="diagram reveal">
+      <div class="diagram-node">Transcripts</div>
+      <div class="diagram-arrow">&rarr;</div>
+      <div class="diagram-node">Clean + Enrich</div>
+      <div class="diagram-arrow">&rarr;</div>
+      <div class="diagram-node highlight">Knowledge Graph</div>
+      <div class="diagram-arrow">&rarr;</div>
+      <div class="diagram-node highlight">Vector Search</div>
+      <div class="diagram-arrow">&rarr;</div>
+      <div class="diagram-node">AI Products</div>
+    </div>
+    <div class="enrich-tags reveal">
+      <span class="enrich-tag hl">topics</span>
+      <span class="enrich-tag hl">people</span>
+      <span class="enrich-tag hl">locations</span>
+      <span class="enrich-tag">themes</span>
+      <span class="enrich-tag">emotional tone</span>
+      <span class="enrich-tag">narrative structure</span>
+      <span class="enrich-tag">key quotes</span>
+      <span class="enrich-tag">techniques</span>
+      <span class="enrich-tag">contributors</span>
+      <span class="enrich-tag">summaries</span>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: Pipeline -->
+  <div class="slide" data-slide="2">
+    <h3 class="reveal">How It Works</h3>
+    <h2 class="reveal">The Pipeline</h2>
+    <div class="pipeline reveal">
+      <div class="pipe-step">
+        <div class="step-num">Step 1</div>
+        <h4>Parse Transcripts</h4>
+        <p>Extract subtitles from the proprietary XML format. Convert frame-based timecodes to standard timestamps. Clean into chunked, searchable text.</p>
+        <div class="pipe-tech">MySQL &rarr; Python parser</div>
+      </div>
+      <div class="pipe-step">
+        <div class="step-num">Step 2</div>
+        <h4>Enrich with AI</h4>
+        <p>Run each transcript through a small LLM to extract topics, people, locations, themes, tone, narrative structure, key quotes, and summaries.</p>
+        <div class="pipe-tech">OpenRouter API</div>
+      </div>
+      <div class="pipe-step">
+        <div class="step-num">Step 3</div>
+        <h4>Store &amp; Connect</h4>
+        <p>Write enriched data into a relational schema. Stories linked to entities via junction tables &mdash; forming the knowledge graph.</p>
+        <div class="pipe-tech">Supabase Postgres</div>
+      </div>
+    </div>
+    <div class="pipeline-2row reveal">
+      <div class="pipe-step">
+        <div class="step-num">Step 4</div>
+        <h4>Vectorize</h4>
+        <p>Embed transcript chunks and summaries using open-source models. Store vectors alongside source text for semantic similarity search.</p>
+        <div class="pipe-tech">HuggingFace BGE &rarr; pgvector</div>
+      </div>
+      <div class="pipe-step">
+        <div class="step-num">Step 5</div>
+        <h4>Build RAG Pipeline</h4>
+        <p>Query &rarr; embed &rarr; retrieve similar chunks + structured filters &rarr; generate grounded answers with citations and timestamps.</p>
+        <div class="pipe-tech">Hybrid search + OpenRouter</div>
+      </div>
+      <div class="pipe-step">
+        <div class="step-num">Step 6</div>
+        <h4>Ship the Demo</h4>
+        <p>Deploy a working interface where you can ask questions, explore connections, and find clips across the entire library.</p>
+        <div class="pipe-tech">HuggingFace Space + custom domain</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: MySQL + Supabase -->
+  <div class="slide" data-slide="3" style="display: grid; grid-template-columns: 1fr 1fr; gap: 4vw; align-content: center;">
+    <div>
+      <h3 class="reveal">Your Existing Stack</h3>
+      <h2 class="reveal" style="font-size: clamp(1.6rem, 3.2vw, 2.6rem);">MySQL <span class="accent">stays.</span><br>Supabase <span class="accent">adds.</span></h2>
+      <p class="reveal" style="margin-top: 0.8em;">
+        Nothing changes about your platform. Supabase is an <span class="bright">AI layer alongside MySQL</span> &mdash; not a replacement.
+      </p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 1.5vw;">
+      <div class="pipe-step reveal" style="border-left: 3px solid #555;">
+        <div class="step-num">MySQL 5.6 &mdash; Stays As-Is</div>
+        <ul class="checklist" style="margin-top: 0;">
+          <li class="critical">Platform &amp; content management</li>
+          <li class="critical">Video metadata &amp; library</li>
+          <li class="critical">User authentication &amp; accounts</li>
+          <li class="critical">All existing functionality</li>
+        </ul>
+      </div>
+      <div class="pipe-step reveal" style="border-left: 3px solid var(--blue);">
+        <div class="step-num">Supabase &mdash; New AI Layer</div>
+        <ul class="checklist" style="margin-top: 0;">
+          <li class="critical">Vector search &amp; semantic queries</li>
+          <li class="critical">Knowledge graph relationships</li>
+          <li class="critical">Embeddings &amp; hybrid search</li>
+          <li class="critical">RAG pipeline for AI answers</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: How They Work Together -->
+  <div class="slide" data-slide="4">
+    <h3 class="reveal">Architecture</h3>
+    <h2 class="reveal">How They Work Together</h2>
+    <p class="reveal">
+      A <span class="bright">one-time export</span> seeds the AI layer. A lightweight sync function keeps it current. <span class="bright">Zero changes</span> to your existing platform.
+    </p>
+    <div class="reveal" style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 2vw; align-items: start; margin-top: 2.5em;">
+      <div class="pipe-step" style="border-top: 3px solid #555;">
+        <div class="step-num">Source of Truth</div>
+        <h4>MySQL</h4>
+        <ul class="checklist" style="margin-top: 0.5em;">
+          <li>Stories &amp; projects</li>
+          <li>Video metadata</li>
+          <li>Transcripts (XML)</li>
+          <li>Users &amp; permissions</li>
+        </ul>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.6em; padding-top: 3em;">
+        <div style="font-size: 1.8rem; color: var(--blue);">&rarr;</div>
+        <div style="background: var(--bg-card); border: 1px solid var(--blue); border-radius: 5px; padding: 0.6em 1.2em; font-size: 0.8rem; color: var(--blue); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap;">Sync Function</div>
+        <div style="font-size: 0.75rem; color: var(--text-dim); text-align: center; max-width: 120px; line-height: 1.4;">cron job or webhook &mdash; watches for updates</div>
+      </div>
+      <div class="pipe-step" style="border-top: 3px solid var(--blue);">
+        <div class="step-num">AI Layer</div>
+        <h4>Supabase</h4>
+        <ul class="checklist" style="margin-top: 0.5em;">
+          <li>Enriched metadata</li>
+          <li>Vector embeddings</li>
+          <li>Knowledge graph</li>
+          <li>Search &amp; RAG</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bonus reveal" style="margin-top: 2em;">
+      <strong>Key:</strong> No migration. No downtime. No changes to the PHP codebase.
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Possibilities -->
+  <div class="slide" data-slide="5">
+    <h3 class="reveal">What It Unlocks</h3>
+    <h2 class="reveal">Possibilities</h2>
+    <div class="poss-cols">
+      <div class="poss-col reveal">
+        <h4>For Audiences</h4>
+        <ul class="poss-list">
+          <li>
+            <span class="poss-query">&ldquo;Stories about families affected by displacement&rdquo;</span>
+            Semantic search across the full library. Understands themes, not just keywords.
+          </li>
+          <li>
+            <span class="poss-query">&ldquo;The moment the rhino keeper talks about loss&rdquo;</span>
+            Clip-level results with exact timestamps. Jump straight into any video.
+          </li>
+          <li>
+            <span class="poss-query">&ldquo;How does MediaStorm structure a character-driven doc?&rdquo;</span>
+            Workshop companion that teaches craft through real examples from 350+ productions.
+          </li>
+        </ul>
+      </div>
+      <div class="poss-col reveal">
+        <h4>For Clients &amp; As a Service</h4>
+        <ul class="poss-list">
+          <li>
+            <span class="poss-query">&ldquo;We want this for our own video archive&rdquo;</span>
+            The same AI enrichment pipeline, offered as a service to Platform licensees. This demo is the proof of concept.
+          </li>
+          <li>
+            <span class="poss-query">&ldquo;Find all our conservation content for the annual report&rdquo;</span>
+            Clients search their own enriched libraries &mdash; instant portfolio discovery for pitches, grants, and impact reports.
+          </li>
+          <li>
+            <span class="poss-query">&ldquo;Every video we upload should be auto-enriched&rdquo;</span>
+            New uploads get instant AI metadata &mdash; topics, people, locations, summaries. Hours of manual tagging, gone.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: What I Need -->
+  <div class="slide" data-slide="6">
+    <h3 class="reveal">To Get Started</h3>
+    <h2 class="reveal">What I Need</h2>
+    <div class="need-cols">
+      <div class="need-block reveal">
+        <h4>Data Access</h4>
+        <div class="blade">
+          <ul class="checklist">
+            <li class="critical">Read-only MySQL access or database dump</li>
+            <li class="critical">Sample transcript data (to build the XML parser)</li>
+            <li>Data sensitivity or rights restrictions to be aware of</li>
+            <li>Priority audience: Channel, Clients, or Training?</li>
+          </ul>
+        </div>
+      </div>
+      <div class="need-block reveal">
+        <h4>API Keys &amp; Services</h4>
+        <div class="blade">
+          <ul class="checklist">
+            <li class="critical">OpenRouter API key (LLM enrichment &amp; RAG)</li>
+            <li class="critical">Supabase project (admin access, or I host and bill annually)</li>
+            <li>Vimeo API token (for thumbnails &amp; re-transcription if needed)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="reveal" style="margin-top: 1.5em; font-size: 0.85rem;">
+      <span class="accent">Filled</span> = blockers &nbsp;&middot;&nbsp; Open = helps quality
+    </p>
+    <p class="reveal" style="margin-top: 1.2em; font-size: 0.85rem; color: #777; max-width: none;">
+      <span class="accent">Estimated cost:</span> &nbsp;OpenRouter ~$5&ndash;15 for full library enrichment (one-time) &nbsp;&middot;&nbsp; Supabase free tier for prototype, ~$25/mo prod &nbsp;&middot;&nbsp; HF Space free + $5/mo persistent storage
+    </p>
+  </div>
+
+  <!-- SLIDE 8: 3-Day Build -->
+  <div class="slide" data-slide="7">
+    <h3 class="reveal">The Plan</h3>
+    <h2 class="reveal">3-Day Build</h2>
+    <div class="timeline reveal">
+      <div class="timeline-day">
+        <div class="day-num">Day 1</div>
+        <h4>Extract &amp; Enrich</h4>
+        <p>Parse XML transcripts into clean timestamped text. Run LLM enrichment for topics, people, locations, themes, tone, structure, quotes. Build Supabase schema.</p>
+      </div>
+      <div class="timeline-day">
+        <div class="day-num">Day 2</div>
+        <h4>Vectorize &amp; Connect</h4>
+        <p>Embed all text with HuggingFace models into pgvector. Build hybrid search with structured filters. Construct knowledge graph relationships. Wire up RAG pipeline.</p>
+      </div>
+      <div class="timeline-day">
+        <div class="day-num">Day 3</div>
+        <h4>Demo &amp; Ship</h4>
+        <p>Build demo interface on HuggingFace Space. Conversational search, story explorer, clip finder. Test with real queries. Deploy with custom domain.</p>
+      </div>
+    </div>
+    <div class="bonus reveal">
+      <strong>Future bonus:</strong> Fine-tune a &ldquo;MediaStorm Voice&rdquo; model on the cleaned corpus &mdash; a model that writes in 20 years of award-winning editorial style.
+    </div>
+  </div>
+
+  <!-- SLIDE 9: MediaStorm Narrative MCP -->
+  <div class="slide" data-slide="8" style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; gap: 1.5em 4vw; align-content: center; padding: 12vh 10vw 14vh;">
+    <div style="align-self: end;">
+      <h3 class="reveal">Looking Ahead</h3>
+      <h2 class="reveal" style="margin-bottom: 0.3em;">MediaStorm Narrative <span class="accent">MCP</span></h2>
+      <p class="reveal">
+        An <strong>MCP</strong> connector that plugs into ChatGPT or Claude. Users get feedback and improve their stories using the MediaStorm archive as a reference.
+      </p>
+    </div>
+    <div style="align-self: end;">
+      <div class="reveal" style="border-bottom: 1px solid #1f1f1f; padding-bottom: 0.9em; margin-bottom: 0.9em;">
+        <span class="poss-query">&ldquo;How have great docs structured stories about loss?&rdquo;</span>
+        <span style="color: var(--text-dim); font-size: 0.9rem;">Narrative patterns and structural analysis from real productions.</span>
+      </div>
+      <div class="reveal">
+        <span class="poss-query">&ldquo;My second act feels flat &mdash; what works here?&rdquo;</span>
+        <span style="color: var(--text-dim); font-size: 0.9rem;">Coaching on structure, pacing, tone, and transitions from the archive.</span>
+      </div>
+    </div>
+    <div class="poss-col reveal" style="margin-top: 2em; grid-column: 1 / -1;">
+      <h4>Benefits</h4>
+      <ul class="checklist" style="margin-top: 0;">
+        <li class="critical">Exclusive to MediaStorm members &amp; subscribers</li>
+        <li class="critical">Innovation &amp; visibility in the AI storytelling space</li>
+        <li>A model Platform clients can replicate for their own archives</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: Case Study -->
+  <div class="slide" data-slide="9">
+    <h3 class="reveal">A Request</h3>
+    <h2 class="reveal">Case Study &amp;<br>Demo Permission</h2>
+    <div class="blade reveal" style="max-width: 680px;">
+      <p style="margin-bottom: 1em;">
+        I&rsquo;d like to use this project as a <span class="bright">case study and live demo</span> when consulting with other media organizations on AI archive enrichment.
+      </p>
+      <p>
+        MediaStorm&rsquo;s name and brand would be credited as the flagship implementation. No proprietary content would be exposed &mdash; only the enriched metadata, search capabilities, and pipeline architecture.
+      </p>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Together -->
+  <div class="slide slide-end" data-slide="10">
+    <div class="reveal">
+      <img src="https://www.mediastorm.com/media/fa05fa2fdd0e43dc994b4e4a23e07563.png" alt="MediaStorm" class="logo" style="margin-bottom: 1.5em;">
+    </div>
+    <h2 class="reveal">Let's build something<br><span class="accent">awesome.</span></h2>
+  </div>
+
+</div>
+
+<div class="nav" id="nav"></div>
+<div class="nav-hint">&larr; &rarr; to navigate</div>
+
+<script>
+  const deck = document.getElementById('deck');
+  const slides = deck.querySelectorAll('.slide');
+  const nav = document.getElementById('nav');
+  let current = 0;
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    nav.appendChild(dot);
+  });
+
+  function goTo(index) {
+    if (index < 0 || index >= slides.length || index === current) return;
+    slides[current].classList.remove('active');
+    nav.children[current].classList.remove('active');
+    current = index;
+    slides[current].classList.add('active');
+    nav.children[current].classList.add('active');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    }
+  });
+
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+  });
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].screenX;
+    if (Math.abs(diff) > 50) {
+      diff > 0 ? goTo(current + 1) : goTo(current - 1);
+    }
+  });
+</script>
+</body>
+</html>

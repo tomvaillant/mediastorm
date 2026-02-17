@@ -1,0 +1,3 @@
+Great question about MySQL. The short answer: your MySQL database stays exactly as it is. Supabase sits alongside it as a dedicated AI layer — it handles vector search, semantic embeddings, and the knowledge graph, while MySQL continues running your platform, content management, and user accounts. A lightweight sync function keeps the two in step, so there's no migration, no downtime, and no changes to your existing codebase.
+
+I've added two slides to the deck that lay this out visually — one showing what each database handles, and one showing how they connect. Take a look and let me know if anything needs clarifying.
